@@ -12,16 +12,16 @@ include:
       {%- endfor -%}
 {% endmacro %}
 
-mariadb_repo:
-  pkgrepo.managed:
-    - humanname: MariaDB
-    - name: deb http://nyc2.mirrors.digitalocean.com/mariadb/repo/10.1/debian wheezy main
-    - dist: wheezy
-    - file: /etc/apt/sources.list.d/MariaDB.list
-    - keyid: '0xcbcb082a1bb943db'
-    - keyserver: keyserver.ubuntu.com
-    - require_in:
-      - pkg: mysqld
+#mariadb_repo:
+#  pkgrepo.managed:
+#    - humanname: MariaDB
+#    - name: deb http://nyc2.mirrors.digitalocean.com/mariadb/repo/10.1/debian wheezy main
+#    - dist: wheezy
+#    - file: /etc/apt/sources.list.d/MariaDB.list
+#    - keyid: '0xcbcb082a1bb943db'
+#    - keyserver: keyserver.ubuntu.com
+#    - require_in:
+#      - pkg: mysqld
 
 mariadb_root_password:
   mysql_user.present:
