@@ -43,7 +43,7 @@ extend:
     file.managed:
       - unless:
         - echo
-  mysql_debconf:
-    debconf.set:
-      - unless:
-        - echo
+  #mysql_debconf:
+  #  debconf.set:
+  #    - unless:
+  #      - echo
