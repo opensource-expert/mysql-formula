@@ -60,6 +60,8 @@ mysql:
   # you can get pillar for existing server using scripts/import_users.py script
   user:
     frank:
+      # frank will be removed
+      absent: True
       password: 'somepass'
       host: localhost
       databases:
@@ -68,12 +70,28 @@ mysql:
         - database: bar
           grants: ['all privileges']
     bob:
-      password_hash: '*6C8989366EAF75BB670AD8EA7A7FC1176A95CEF4'
+      password_hash: '*6c8989366eaf75bb670ad8ea7a7fc1176a95cef4'
       host: localhost
       databases:
         - database: foo
           grants: ['all privileges']
-          grant_option: True
+          grant_option: true
+        - database: bar
+          table: foobar
+          grants: ['select', 'insert', 'update', 'delete']
+    sylvain:
+      password: 'sylvainSecr3t'
+      # mutiple hosts
+      hosts: 
+        - localhost
+        - 10.0.0.2
+      host_absent:
+        # removed from this one
+        - 10.0.0.1
+      databases:
+        - database: foo
+          grants: ['all privileges']
+          grant_option: true
         - database: bar
           table: foobar
           grants: ['select', 'insert', 'update', 'delete']
