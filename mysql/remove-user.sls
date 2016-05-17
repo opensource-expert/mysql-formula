@@ -33,69 +33,20 @@ include:
 {% endif %}
 
 {% for host in user_hosts %}
-{# Don't create absent user, see remove-user.sls #}
-{% if user.absent is not defined or not user.absent %}
-{% set state_id = 'mysql_user_' ~ name ~ '_' ~ host%}
+
+{% if user.absent is defined and user.absent %}
+{% set state_id = 'mysql_user_remove_' ~ name ~ '_' ~ host%}
 {{ state_id }}:
-  mysql_user.present:
+  mysql_user.absent:
     - name: {{ name }}
     - host: '{{ host }}'
-  {%- if user['password_hash'] is defined %}
-    - password_hash: '{{ user['password_hash'] }}'
-  {%- elif user['password'] is defined and user['password'] != None %}
-    - password: '{{ user['password'] }}'
-  {%- else %}
-    - allow_passwordless: True
-  {%- endif %}
     - connection_host: '{{ mysql_host }}'
     - connection_user: '{{ mysql_salt_user }}'
     {% if mysql_salt_pass %}
     - connection_pass: '{{ mysql_salt_pass }}'
     {% endif %}
     - connection_charset: utf8
-
-{%- if 'grants' in user %}
-{{ state_id ~ '_grants' }}:
-  mysql_grants.present:
-    - name: {{ name }}
-    - grant: {{ user['grants']|join(",") }}
-    - database: '*.*'
-    - grant_option: {{ user['grant_option'] | default(False) }}
-    - user: {{ name }}
-    - host: '{{ host }}'
-    - connection_host: localhost
-    - connection_user: '{{ mysql_salt_user }}'
-    {% if mysql_salt_pass -%}
-    - connection_pass: '{{ mysql_salt_pass }}'
-    {% endif %}
-    - connection_charset: utf8
-    - require:
-      - mysql_user: {{ state_id }}
 {% endif %}
 
-{%- if 'databases' in user %}
-{% for db in user['databases'] %}
-{{ state_id ~ '_' ~ loop.index0 }}:
-  mysql_grants.present:
-    - name: {{ name ~ '_' ~ db['database']  ~ '_' ~ db['table'] | default('all') }}
-    - grant: {{db['grants']|join(",")}}
-    - database: '{{ db['database'] }}.{{ db['table'] | default('*') }}'
-    - grant_option: {{ db['grant_option'] | default(False) }}
-    - user: {{ name }}
-    - host: '{{ host }}'
-    - connection_host: '{{ mysql_host }}'
-    - connection_user: '{{ mysql_salt_user }}'
-    {% if mysql_salt_pass -%}
-    - connection_pass: '{{ mysql_salt_pass }}'
-    {% endif %}
-    - connection_charset: utf8
-    - require:
-      - mysql_user: {{ state_id }}
-{% endfor %}
-{% endif %}
-{# endif user.absent #}
-{% endif %}
-
-{% do user_states.append(state_id) %}
 {% endfor %}
 {% endfor %}
