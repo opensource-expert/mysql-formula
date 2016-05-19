@@ -1,3 +1,5 @@
+# vim: set ft=yaml:
+
 mysql:
   global:
     client-server:
@@ -60,7 +62,7 @@ mysql:
   # you can get pillar for existing server using scripts/import_users.py script
   user:
     frank:
-      # frank will be removed
+      # /!\ frank will be removed, with the following boolean
       absent: True
       password: 'somepass'
       host: localhost
@@ -81,12 +83,12 @@ mysql:
           grants: ['select', 'insert', 'update', 'delete']
     sylvain:
       password: 'sylvainSecr3t'
-      # mutiple hosts
+      # sylvain has multiple hosts entries in the database (note: hosts plural)
       hosts: 
         - localhost
         - 10.0.0.2
-      host_absent:
-        # removed from this one
+      hosts_absent:
+        # removed from this one, if any
         - 10.0.0.1
       databases:
         - database: foo
@@ -109,7 +111,7 @@ mysql:
         - database: foo
           grants: ['select', 'insert', 'update']
 
-  # Override any names defined in map.jinja
+  # Override any names defined in mysql/defaults.yaml
   lookup:
     server: mysql-server
     client: mysql-client
@@ -120,4 +122,3 @@ mysql:
   dev:
     # Install dev package - defaults to False
     install: False
-
