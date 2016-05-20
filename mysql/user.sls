@@ -16,25 +16,49 @@ This state handle creation and deletion of mysql's user.
 {% set user_states = [] %}
 {% set user_hosts = [] %}
 {#-
-===== MACRO DEFINITION =====
+===== MACRO DEFINITION =====
 -#}
+{# this macro is for DRY connection to the database #}
+{%- macro mysql_root_connection() %}
+    - connection_host: '{{ mysql_host }}'
+    - connection_user: '{{ mysql_salt_user }}'
+      {%- if mysql_salt_pass %}
+    - connection_pass: '{{ mysql_salt_pass }}'
+      {%- endif %}
+    - connection_charset: utf8
+{% endmacro -%}
+
 {# this macro is the salt statement to remove a user #}
-{% macro mysql_user_remove(name, host, where) %}
-{% set state_id = 'mysql_user_remove_' ~ name ~ '_' ~ host %}
+{%- macro mysql_user_remove(name, host, where) %}
+{%- set state_id = 'mysql_user_remove_' ~ name ~ '_' ~ host %}
 {{ state_id }}:
   # {{ where }}
   mysql_user.absent:
     - name: {{ name }}
     - host: '{{ host }}'
-    - connection_host: '{{ mysql_host }}'
-    - connection_user: '{{ mysql_salt_user }}'
-      {% if mysql_salt_pass %}
-    - connection_pass: '{{ mysql_salt_pass }}'
-      {% endif %}
-    - connection_charset: utf8
-{% endmacro %}
+    {{ mysql_root_connection() }}
+{% endmacro -%}
+
+{#- this macro is a salt state fully destroy a user from mysql tables
+it is an experimental macro… use with caution!
+-#}
+{% macro mysql_user_destroy(name) %}
+{%- set state_id = 'mysql_user_destroy_' ~ name %}
+{%- set queries = "
+DELETE FROM columns_priv WHERE user = '" ~ name ~ "';
+DELETE FROM db    WHERE user = '" ~  name ~ "';
+DELETE FROM user  WHERE user = '" ~ name ~"';
+FLUSH PRIVILEGES;
+" %}
+{{ state_id }}:
+  module.run:
+    - name: mysql.query
+    - database: mysql
+    - query: "{{ queries }}"
+    {{ mysql_root_connection() }}
+{% endmacro -%}
 {#-
-===== MAIN OUTPUT=====
+===== MAIN OUTPUT=====
 -#}
 include:
   - mysql.python
@@ -64,14 +88,14 @@ include:
   {% endif %}
 {% endif %}
 {#-
-  ===== INNER LOOP OVER DATA : host -> fecthed above single or multiple =====
+  ===== INNER LOOP OVER DATA : host -> fecthed above single or multiple =====
 -#}
 {% for host in user_hosts %}
 {% if user.absent is defined and user.absent %}
 {{ mysql_user_remove(name, host, 'top') }}
 {% else %}
 {#-
-  CREATE USER
+  CREATE USER
 -#}
 {% set state_id = 'mysql_user_' ~ name ~ '_' ~ host%}
 {{ state_id }}:
@@ -132,12 +156,12 @@ include:
 {% endfor %}
 {% endif %}
 
-{# END user.absent #}
+{# END user.absent #}
 {% endif %}
 
 {% do user_states.append(state_id) %}
 {#-
-  =============== END FOR host
+  =============== END FOR host
 -#}
 {% endfor %}
 
@@ -152,6 +176,6 @@ must be in user loop not in host loop.
   {% endfor %}
 {% endif %}
 {#-
-  =============== END FOR user
+  =============== END FOR user
 -#}
 {% endfor %}
