@@ -23,12 +23,7 @@ def __virtual__():
 def mysql_cleanup_users(extra_keep=None, **connection_args):
     '''
     "mysql_cleanup_users" remove all non root users from the database;
-    .. code-block:: SQL
-
-        DELETE FROM user         WHERE user NOT IN('root', 'debian-sys-maint');
-        DELETE FROM db           WHERE user NOT IN('root', 'debian-sys-maint');
-        DELETE FROM columns_priv WHERE user NOT IN('root', 'debian-sys-maint');
-        FLUSH PRIVILEGES;
+    only root and debian-sys-maint are preserved
 
     CLI Example:
 
@@ -39,15 +34,15 @@ def mysql_cleanup_users(extra_keep=None, **connection_args):
     LOG.debug('Executing mysql_cleanup_users')
     query="""
         DELETE FROM user         WHERE user NOT IN('root', 'debian-sys-maint');
-        DELETE FROM db           WHERE user NOT IN('root', 'debian-sys-maint');
-        DELETE FROM columns_priv WHERE user NOT IN('root', 'debian-sys-maint');
+        DELETE FROM db;
+        DELETE FROM columns_priv;
         FLUSH PRIVILEGES;
         """
     res = __salt__['mysql.query']('mysql', query)
     LOG.debug(res)
 
     query="SELECT user, host FROM user"
-    res = __salt__['mysql.query']('mysql', query)
+    res = __salt__['mysql.user_list']()
     LOG.debug(res)
 
     return res
