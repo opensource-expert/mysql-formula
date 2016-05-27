@@ -16,7 +16,7 @@ This state handle creation and deletion of mysql's user.
 {% set user_states = [] %}
 {% set user_hosts = [] %}
 {#-
-===== MACRO DEFINITION =====
+===== MACRO DEFINITION =====
 -#}
 {# this macro is the salt statement to remove a user #}
 {% macro mysql_user_remove(name, host, where) %}
@@ -34,7 +34,7 @@ This state handle creation and deletion of mysql's user.
     - connection_charset: utf8
 {% endmacro %}
 {#-
-===== MAIN OUTPUT=====
+===== MAIN OUTPUT=====
 -#}
 include:
   - mysql.python
@@ -64,14 +64,14 @@ include:
   {% endif %}
 {% endif %}
 {#-
-  ===== INNER LOOP OVER DATA : host -> fecthed above single or multiple =====
+  ===== INNER LOOP OVER DATA : host -> fecthed above single or multiple =====
 -#}
 {% for host in user_hosts %}
 {% if user.absent is defined and user.absent %}
 {{ mysql_user_remove(name, host, 'top') }}
 {% else %}
 {#-
-  CREATE USER
+  CREATE USER
 -#}
 {% set state_id = 'mysql_user_' ~ name ~ '_' ~ host%}
 {{ state_id }}:
@@ -132,12 +132,12 @@ include:
 {% endfor %}
 {% endif %}
 
-{# END user.absent #}
+{# END user.absent #}
 {% endif %}
 
 {% do user_states.append(state_id) %}
 {#-
-  =============== END FOR host
+  =============== END FOR host
 -#}
 {% endfor %}
 
@@ -152,6 +152,5 @@ must be in user loop not in host loop.
   {% endfor %}
 {% endif %}
 {#-
-  =============== END FOR user
+  =============== END FOR user
 -#}
-{% endfor %}

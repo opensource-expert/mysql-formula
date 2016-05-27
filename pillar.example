@@ -1,5 +1,3 @@
-# vim: set ft=yaml:
-
 mysql:
   global:
     client-server:
@@ -62,8 +60,6 @@ mysql:
   # you can get pillar for existing server using scripts/import_users.py script
   user:
     frank:
-      # /!\ frank will be removed, with the following boolean
-      absent: True
       password: 'somepass'
       host: localhost
       databases:
@@ -72,28 +68,12 @@ mysql:
         - database: bar
           grants: ['all privileges']
     bob:
-      password_hash: '*6c8989366eaf75bb670ad8ea7a7fc1176a95cef4'
+      password_hash: '*6C8989366EAF75BB670AD8EA7A7FC1176A95CEF4'
       host: localhost
       databases:
         - database: foo
           grants: ['all privileges']
-          grant_option: true
-        - database: bar
-          table: foobar
-          grants: ['select', 'insert', 'update', 'delete']
-    sylvain:
-      password: 'sylvainSecr3t'
-      # sylvain has multiple hosts entries in the database (note: hosts plural)
-      hosts: 
-        - localhost
-        - 10.0.0.2
-      hosts_absent:
-        # removed from this one, if any
-        - 10.0.0.1
-      databases:
-        - database: foo
-          grants: ['all privileges']
-          grant_option: true
+          grant_option: True
         - database: bar
           table: foobar
           grants: ['select', 'insert', 'update', 'delete']
@@ -111,14 +91,25 @@ mysql:
         - database: foo
           grants: ['select', 'insert', 'update']
 
-  # Override any names defined in mysql/defaults.yaml
+  ## Override any names defined in map.jinja
+  #lookup:
+  #  server: mysql-server
+  #  client: mysql-client
+  #  service: mysql-service
+  #  python: python-mysqldb
+
+  # alternative for mariaDB tested debian Jessie it becomes
   lookup:
-    server: mysql-server
-    client: mysql-client
-    service: mysql-service
+    server: mariadb-server
+    client: mariadb-client
+    debconf_package: mariadb-server-10.0
+    debconf: mysql-server
+    service: mysql
     python: python-mysqldb
+
 
   # Install MySQL headers
   dev:
     # Install dev package - defaults to False
     install: False
+
