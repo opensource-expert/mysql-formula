@@ -16,7 +16,7 @@ mysql:
 
   server:
     # Use this account for database admin (defaults to root)
-    root_user: 'admin'
+    root_user: 'root'
     # root_password: '' - to have root@localhost without password
     root_password: 'somepass'
     root_password_hash: '*13883BDDBE566ECECC0501CDE9B293303116521A'
@@ -36,11 +36,12 @@ mysql:
       # my.cnf param that not require value
       no-auto-rehash: noarg_present
 
-  salt_user:
-    salt_user_name: 'salt'
-    salt_user_password: 'someotherpass'
-    grants:
-      - 'all privileges'
+  # used to manage user with a different user than root
+  #alt_user:
+  # salt_user_name: 'salt'
+  # salt_user_password: 'someotherpass'
+  # grants:
+  #   - 'all privileges'
 
   # Manage databases
   database:
@@ -103,6 +104,7 @@ mysql:
       host: localhost
       databases:
         - database: foo
+          grants: ['all privileges']
     # the following user was allowed to connect from many host
     # some are removed
     sylvain:
@@ -115,6 +117,7 @@ mysql:
         - 10.0.0.3
       databases:
         - database: foo
+          grants: ['all privileges']
 
   ## Override any names defined in mysql/defaults.yaml
   #lookup:
