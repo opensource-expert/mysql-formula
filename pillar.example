@@ -1,5 +1,4 @@
 # vim: set ft=yaml:
-
 mysql:
   global:
     client-server:
@@ -17,7 +16,7 @@ mysql:
 
   server:
     # Use this account for database admin (defaults to root)
-    root_user: 'admin'
+    root_user: 'root'
     # root_password: '' - to have root@localhost without password
     root_password: 'somepass'
     root_password_hash: '*13883BDDBE566ECECC0501CDE9B293303116521A'
@@ -37,11 +36,12 @@ mysql:
       # my.cnf param that not require value
       no-auto-rehash: noarg_present
 
-  salt_user:
-    salt_user_name: 'salt'
-    salt_user_password: 'someotherpass'
-    grants:
-      - 'all privileges'
+  # used to manage user with a different user than root
+  #alt_user:
+  # salt_user_name: 'salt'
+  # salt_user_password: 'someotherpass'
+  # grants:
+  #   - 'all privileges'
 
   # Manage databases
   database:
@@ -62,38 +62,24 @@ mysql:
   # you can get pillar for existing server using scripts/import_users.py script
   user:
     frank:
-      # /!\ frank will be removed, with the following boolean
-      absent: True
       password: 'somepass'
-      host: localhost
+      # frank is allowed to connect from multiple remote host, thus producing
+      # multiple mysql's users in the mysql.user table (hosts plural)
+      hosts:
+        - localhost
+        - 10.0.0.22
       databases:
         - database: foo
           grants: ['select', 'insert', 'update']
         - database: bar
           grants: ['all privileges']
     bob:
-      password_hash: '*6c8989366eaf75bb670ad8ea7a7fc1176a95cef4'
+      password_hash: '*6C8989366EAF75BB670AD8EA7A7FC1176A95CEF4'
       host: localhost
       databases:
         - database: foo
           grants: ['all privileges']
-          grant_option: true
-        - database: bar
-          table: foobar
-          grants: ['select', 'insert', 'update', 'delete']
-    sylvain:
-      password: 'sylvainSecr3t'
-      # sylvain has multiple hosts entries in the database (note: hosts plural)
-      hosts: 
-        - localhost
-        - 10.0.0.2
-      hosts_absent:
-        # removed from this one, if any
-        - 10.0.0.1
-      databases:
-        - database: foo
-          grants: ['all privileges']
-          grant_option: true
+          grant_option: True
         - database: bar
           table: foobar
           grants: ['select', 'insert', 'update', 'delete']
@@ -110,15 +96,49 @@ mysql:
       databases:
         - database: foo
           grants: ['select', 'insert', 'update']
+    # some users to remove. user as the mysql.user table point of view.
+    alice:
+      absent: True
+      # you may keep existing parmeters for your history
+      password_hash: '*6C8989366EAF75BB670AD8EA7A7FC1176A95CEF4'
+      host: localhost
+      databases:
+        - database: foo
+          grants: ['all privileges']
+    # the following user was allowed to connect from many host
+    # some are removed
+    sylvain:
+      password: 'echo some | more'
+      hosts:
+        - localhost
+        - 10.0.0.22
+      # will add/tested for present on the hosts: above and removed from hosts_absent:
+      hosts_absent:
+        - 10.0.0.3
+      databases:
+        - database: foo
+          grants: ['all privileges']
 
-  # Override any names defined in mysql/defaults.yaml
+  ## Override any names defined in mysql/defaults.yaml
+  #lookup:
+  #  server: mysql-server
+  #  client: mysql-client
+  #  service: mysql-service
+  #  python: python-mysqldb
+
+  # alternative for mariaDB: tested on debian Jessie it becomes
   lookup:
-    server: mysql-server
-    client: mysql-client
-    service: mysql-service
+    # those two are debian packgage's name
+    server: mariadb-server
+    client: mariadb-client
+    # /!\ debconf_package is different from lookup.server
+    debconf_package: mariadb-server-10.0
+    debconf: mysql-server
+    service: mysql
     python: python-mysqldb
 
   # Install MySQL headers
   dev:
     # Install dev package - defaults to False
     install: False
+

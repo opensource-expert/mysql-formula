@@ -97,7 +97,7 @@ include:
 {#-
   CREATE USER
 -#}
-{% set state_id = 'mysql_user_' ~ name ~ '_' ~ host%}
+{% set state_id = 'mysql_user_' ~ name ~ '_' ~ host %}
 {{ state_id }}:
   mysql_user.present:
     - name: {{ name }}
@@ -156,10 +156,11 @@ include:
 {% endfor %}
 {% endif %}
 
+{# collect added user for mysql/init.sls for requisites #}
+{% do user_states.append(state_id) %}
+
 {# END user.absent #}
 {% endif %}
-
-{% do user_states.append(state_id) %}
 {#-
   =============== END FOR host
 -#}
