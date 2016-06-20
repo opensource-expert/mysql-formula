@@ -2,6 +2,10 @@
 include:
   - mysql.config
   - mysql.python
+{% if salt['pillar.get']('mysql:server:enable_root_my_cnf', False) %}
+  - mysql.root_my_cnf
+  - mysql.change_root_password
+{% endif %}
 
 {% from "mysql/defaults.yaml" import rawmap with context %}
 {%- set mysql = salt['grains.filter_by'](rawmap, grain='os', merge=salt['pillar.get']('mysql:lookup')) %}
@@ -24,9 +28,9 @@ mysql_debconf:
   debconf.set:
     - name: {{ mysql.server }}
     - data:
-        '{{ mysql.debconf }}/root_password': {'type': 'password', 'value': '{{ mysql_root_password }}'}
-        '{{ mysql.debconf }}/root_password_again': {'type': 'password', 'value': '{{ mysql_root_password }}'}
-        '{{ mysql.debconf }}/start_on_boot': {'type': 'boolean', 'value': 'true'}
+        '{{ mysql.server }}/root_password': {'type': 'password', 'value': '{{ mysql_root_password }}'}
+        '{{ mysql.server }}/root_password_again': {'type': 'password', 'value': '{{ mysql_root_password }}'}
+        '{{ mysql.server }}/start_on_boot': {'type': 'boolean', 'value': 'true'}
     - require_in:
       - pkg: {{ mysql.server }}
     - require:
@@ -106,3 +110,4 @@ mysql_additional_config:
     - create: False
     - watch_in:
       - service: mysqld
+
