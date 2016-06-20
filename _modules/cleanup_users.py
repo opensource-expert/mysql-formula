@@ -8,6 +8,7 @@
 
 from __future__ import absolute_import
 import logging
+import re
 
 LOG = logging.getLogger(__name__)
 
@@ -73,7 +74,7 @@ def cleanup_users(drop_extra = [], keep_extra = [], **connection_args):
 
 debian_keep = ['root@%', 'debian-sys-maint@localhost']
 
-def list_user_managed(add_extra = []):
+def list_user_managed(keep_extra = [], drop_extra = []):
     '''
     "list_user_managed" list all managed users according to pillar data
 
@@ -82,24 +83,29 @@ def list_user_managed(add_extra = []):
     .. code-block:: bash
 
         salt '*' mysql.list_user_managed
-        salt '*' mysql.list_user_managed add_extra="['root@%', 'debian-sys-maint@localhost']"
+        salt '*' mysql.list_user_managed keep_extra="['root@%', 'debian-sys-maint@localhost']"
     '''
 
     LOG.debug('Executing mysql.list_user_managed')
     managed = []
+    regexp = re.compile(r'^(%s)$' % _get_user_regexp(drop_extra))
+    LOG.debug(regexp)
     for user, info in __salt__['pillar.get']('mysql:user', {}).items():
         # single or many host
         hosts = info.get('hosts', [info.get('host')])
         for h in hosts:
-            managed.append(user + '@' + h)
+            s = user + '@' + h
+            if re.search(regexp, s):
+                continue
+            managed.append(s)
 
-    if len(add_extra) > 0:
-        managed += add_extra
+    if len(keep_extra) > 0:
+        managed += keep_extra
 
     LOG.debug(managed)
     return managed
 
-def list_user_to_keep(add_extra = []):
+def list_user_to_keep(keep_extra = [], drop_extra = []):
     '''
     "list_user_to_keep" list all users that will be kept by cleanup_users()
 
@@ -110,7 +116,7 @@ def list_user_to_keep(add_extra = []):
         salt '*' mysql.list_user_to_keep
     '''
     LOG.debug('Executing mysql.list_user_tokeep')
-    to_keep = list_user_managed(debian_keep + add_extra)
+    to_keep = list_user_managed(debian_keep + keep_extra, drop_extra)
 
     return to_keep
 
@@ -138,7 +144,7 @@ def list_user_to_drop(drop_extra = [], keep_extra = [], **connection_args):
         salt '*' mysql.list_user_to_drop
     '''
     LOG.debug('Executing mysql.list_user_to_drop')
-    managed = list_user_to_keep(keep_extra)
+    managed = list_user_to_keep(keep_extra, drop_extra)
     regexp = _get_user_regexp(managed)
     clause = "CONCAT(user, '@', host) NOT regexp '^(%s)$'" % regexp
     query= "SELECT CONCAT(user, '@', host) as user FROM user WHERE %s;" % clause
