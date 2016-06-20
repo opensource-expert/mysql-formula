@@ -45,6 +45,25 @@ debconf.
     cryptographically insecure, future formula versions should use the
     newly available ``random.get_str`` method.
 
+.. note::
+    For mariaDB under Debian jessie, use the following pillar values: ``debconf_package:``
+    and ``debconf:``
+
+    They are new pillar's variable to feed debconf.
+
+::
+
+  # example of pillar
+  mysql:
+    lookup:
+      server: mariadb-server
+      client: mariadb-client
+      debconf_package: mariadb-server-10.0
+      debconf: mysql-server
+      service: mysql
+      python: python-mysqldb
+
+
 ``mysql.disabled``
 ------------------
 
@@ -95,4 +114,5 @@ Install the MySQL development libraries and header files.
 .. note::
     Note that this state is not installed by the mysql meta-state unless you set
     your pillar data accordingly.
+
 
