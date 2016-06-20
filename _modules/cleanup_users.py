@@ -73,19 +73,19 @@ def cleanup_users(extra_keep=[], **connection_args):
 
 debian_keep = ['root@%', 'debian-sys-maint@localhost']
 
-def list_all_managed(add_extra = [], **connection_args):
+def list_user_managed(add_extra = [], **connection_args):
     '''
-    "list_all_managed" list all managed users according to pillar data
+    "list_user_managed" list all managed users according to pillar data
 
     CLI Example:
 
     .. code-block:: bash
 
-        salt '*' mysql.list_all_managed
-        salt '*' mysql.list_all_managed add_extra="['root@%', 'debian-sys-maint@localhost']"
+        salt '*' mysql.list_user_managed
+        salt '*' mysql.list_user_managed add_extra="['root@%', 'debian-sys-maint@localhost']"
     '''
 
-    LOG.debug('Executing mysql.list_all_managed')
+    LOG.debug('Executing mysql.list_user_managed')
     managed = []
     for user, info in __salt__['pillar.get']('mysql:user', {}).items():
         # ingnore disabled user, feature added by customers-formula
@@ -102,7 +102,7 @@ def list_all_managed(add_extra = [], **connection_args):
 
     return managed
 
-def list_user_to_keep(add_extra = [], **connection_args):
+def list_user_to_keep(add_extra = []):
     '''
     "list_user_to_keep" list all users that will be kept by cleanup_users()
 
@@ -113,7 +113,7 @@ def list_user_to_keep(add_extra = [], **connection_args):
         salt '*' mysql.list_user_to_keep
     '''
     LOG.debug('Executing mysql.list_user_tokeep')
-    to_keep = list_all_managed(debian_keep + add_extra)
+    to_keep = list_user_managed(debian_keep + add_extra)
 
     return to_keep
 
@@ -141,7 +141,7 @@ def list_user_to_drop(drop_extra = [], keep_extra = [], **connection_args):
         salt '*' mysql.list_user_to_drop
     '''
     LOG.debug('Executing mysql.list_user_to_drop')
-    managed = list_all_managed(debian_keep + keep_extra)
+    managed = list_user_to_keep(keep_extra)
     regexp = _get_user_regexp(managed)
     clause = "CONCAT(user, '@', host) NOT regexp '^(%s)$'" % regexp
     query= "SELECT CONCAT(user, '@', host) as user FROM user WHERE %s;" % clause
