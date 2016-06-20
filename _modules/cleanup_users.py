@@ -46,7 +46,7 @@ def remove_all_non_admin_user(**connection_args):
 
     return res
 
-def cleanup_users(extra_keep=[], **connection_args):
+def cleanup_users(drop_extra = [], keep_extra = [], **connection_args):
     '''
     "cleanup_users" remove all non managed users from the database.
     Managed users are calculated from the pillar.
@@ -58,7 +58,7 @@ def cleanup_users(extra_keep=[], **connection_args):
         salt '*' mysql.cleanup_users
     '''
     LOG.debug('Executing mysql.cleanup_users')
-    drop_users = list_user_to_drop(extra_keep, **connection_args)
+    drop_users = list_user_to_drop(drop_extra, keep_extra, **connection_args)
     query="""
         DELETE FROM user WHERE CONCAT(user, '@', host) IN(%(drop)s);
         DELETE FROM db WHERE CONCAT(user, '@', host) IN(%(drop)s);
