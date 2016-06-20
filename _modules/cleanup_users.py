@@ -20,10 +20,36 @@ def __virtual__():
     '''
     return True
 
-def mysql_cleanup_users(extra_keep=None, **connection_args):
+def remove_all_non_admin_user(**connection_args):
     '''
-    "mysql_cleanup_users" remove all non root users from the database;
-    only root and debian-sys-maint are preserved
+    "remove_all_non_admin_user" remove all non root users from the database.
+    Only root and debian-sys-maint are preserved.
+
+    CLI Example:
+
+    .. code-block:: bash
+
+        salt '*' mysql.remove_all_non_admin_user
+    '''
+    LOG.debug('Executing mysql.remove_all_non_admin_user')
+    query="""
+        DELETE FROM user WHERE user NOT IN('root', 'debian-sys-maint');
+        DELETE FROM db;
+        DELETE FROM columns_priv;
+        FLUSH PRIVILEGES;
+        """
+    res = __salt__['mysql.query']('mysql', query, **connection_args)
+    LOG.debug(res)
+
+    res = __salt__['mysql.user_list']()
+    LOG.debug(res)
+
+    return res
+
+def cleanup_users(extra_keep=[], **connection_args):
+    '''
+    "cleanup_users" remove all non managed users from the database.
+    Managed users are calculated from the pillar.
 
     CLI Example:
 
@@ -31,18 +57,97 @@ def mysql_cleanup_users(extra_keep=None, **connection_args):
 
         salt '*' mysql.cleanup_users
     '''
-    LOG.debug('Executing mysql_cleanup_users')
+    LOG.debug('Executing mysql.cleanup_users')
+    drop_users = list_user_to_drop(extra_keep, **connection_args)
     query="""
-        DELETE FROM user         WHERE user NOT IN('root', 'debian-sys-maint');
-        DELETE FROM db;
-        DELETE FROM columns_priv;
+        DELETE FROM user WHERE CONCAT(user, '@', host) IN(%(drop)s);
+        DELETE FROM db WHERE CONCAT(user, '@', host) IN(%(drop)s);;
+        DELETE FROM columns_priv WHERE CONCAT(user, '@', host) IN(%(drop)s);;
         FLUSH PRIVILEGES;
-        """
+        """ % dict(drop="'" + "','".join(drop_users) + "'")
     res = __salt__['mysql.query']('mysql', query)
     LOG.debug(res)
 
-    query="SELECT user, host FROM user"
-    res = __salt__['mysql.user_list']()
+    res = drop_users
+    return res
+
+debian_keep = ['root@%', 'debian-sys-maint@localhost']
+
+def list_all_managed(add_extra = [], **connection_args):
+    '''
+    "list_all_managed" list all managed users according to pillar data
+
+    CLI Example:
+
+    .. code-block:: bash
+
+        salt '*' mysql.list_all_managed
+        salt '*' mysql.list_all_managed add_extra="['root@%', 'debian-sys-maint@localhost']"
+    '''
+
+    LOG.debug('Executing mysql.list_all_managed')
+    managed = []
+    for user, info in __salt__['pillar.get']('mysql:user', {}).items():
+        # ingnore disabled user, feature added by customers-formula
+        if info.get('disabled'):
+            continue
+        hosts = info.get('hosts', [info.get('host')])
+        for h in hosts:
+            managed.append(user + '@' + h)
+
+    if len(add_extra) > 0:
+        managed += add_extra
+
+    LOG.debug(managed)
+
+    return managed
+
+def list_user_to_keep(add_extra = [], **connection_args):
+    '''
+    "list_user_to_keep" list all users that will be kept by cleanup_users()
+
+    CLI Example:
+
+    .. code-block:: bash
+
+        salt '*' mysql.list_user_to_keep
+    '''
+    LOG.debug('Executing mysql.list_user_tokeep')
+    to_keep = list_all_managed(debian_keep + add_extra)
+
+    return to_keep
+
+def _get_user_regexp(managed):
+    # adapt managed user wildcards
+    i = 0
+    for u in managed:
+        if '.' in u:
+            managed[i] = u.replace('.', '\.')
+        if '%' in u:
+            managed[i] = u.replace('%', '.*')
+        i += 1
+
+    regexp = "|".join(managed)
+    return regexp
+
+def list_user_to_drop(drop_extra = [], keep_extra = [], **connection_args):
+    '''
+    "list_user_to_drop" list all users that will be droped by cleanup_users()
+
+    CLI Example:
+
+    .. code-block:: bash
+
+        salt '*' mysql.list_user_to_drop
+    '''
+    LOG.debug('Executing mysql.list_user_to_drop')
+    managed = list_all_managed(debian_keep + keep_extra)
+    regexp = _get_user_regexp(managed)
+    clause = "CONCAT(user, '@', host) NOT regexp '^(%s)$'" % regexp
+    query= "SELECT CONCAT(user, '@', host) as user FROM user WHERE %s;" % clause
+    LOG.debug(query)
+    res = __salt__['mysql.query']('mysql', query)
     LOG.debug(res)
 
-    return res
+    # format as a list, as they are tuple
+    return [ u[0] for u in res['results'] ]
