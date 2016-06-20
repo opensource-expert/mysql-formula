@@ -110,4 +110,3 @@ mysql_additional_config:
     - create: False
     - watch_in:
       - service: mysqld
-

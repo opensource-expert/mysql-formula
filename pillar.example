@@ -16,7 +16,7 @@ mysql:
 
   server:
     # Use this account for database admin (defaults to root)
-    root_user: 'admin'
+    root_user: 'root'
     # root_password: '' - to have root@localhost without password
     # enable_root_my_cnf (default: False) will store root password into chmod 600 /root/.my.cnf
     enable_root_my_cnf: True
@@ -38,11 +38,12 @@ mysql:
       # my.cnf param that not require value
       no-auto-rehash: noarg_present
 
-  salt_user:
-    salt_user_name: 'salt'
-    salt_user_password: 'someotherpass'
-    grants:
-      - 'all privileges'
+  # used to manage user with a different user than root
+  #alt_user:
+  # salt_user_name: 'salt'
+  # salt_user_password: 'someotherpass'
+  # grants:
+  #   - 'all privileges'
 
   # Manage databases
   database:
@@ -93,16 +94,41 @@ mysql:
       databases:
         - database: foo
           grants: ['select', 'insert', 'update']
+    # some users to remove. user as the mysql.user table point of view.
+    alice:
+      absent: True
+      # you may keep existing parmeters for your history
+      password_hash: '*6C8989366EAF75BB670AD8EA7A7FC1176A95CEF4'
+      host: localhost
+      databases:
+        - database: foo
+          grants: ['all privileges']
+    # the following user was allowed to connect from many host
+    # some are removed
+    sylvain:
+      password: 'echo some | more'
+      hosts:
+        - localhost
+        - 10.0.0.22
+      # will add/tested for present on the hosts: above and removed from hosts_absent:
+      hosts_absent:
+        - 10.0.0.3
+      databases:
+        - database: foo
+          grants: ['all privileges']
 
-  # Override any names defined in map.jinja
+  ## Override any names defined in mysql/defaults.yaml
   lookup:
-    server: mysql-server
-    client: mysql-client
-    service: mysql-service
+    server: mariadb-server
+    client: mariadb-client
+    debconf_package: mariadb-server-10.0
+    debconf: mysql-server
+    service: mysql
     python: python-mysqldb
 
   # Install MySQL headers
   dev:
     # Install dev package - defaults to False
     install: False
+
 
