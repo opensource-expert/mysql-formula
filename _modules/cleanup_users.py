@@ -46,7 +46,7 @@ def remove_all_non_admin_user(**connection_args):
 
     return res
 
-def cleanup_users(extra_keep=[], **connection_args):
+def cleanup_users(drop_extra = [], keep_extra = [], **connection_args):
     '''
     "cleanup_users" remove all non managed users from the database.
     Managed users are calculated from the pillar.
@@ -58,14 +58,14 @@ def cleanup_users(extra_keep=[], **connection_args):
         salt '*' mysql.cleanup_users
     '''
     LOG.debug('Executing mysql.cleanup_users')
-    drop_users = list_user_to_drop(extra_keep, **connection_args)
+    drop_users = list_user_to_drop(drop_extra, keep_extra, **connection_args)
     query="""
         DELETE FROM user WHERE CONCAT(user, '@', host) IN(%(drop)s);
-        DELETE FROM db WHERE CONCAT(user, '@', host) IN(%(drop)s);;
-        DELETE FROM columns_priv WHERE CONCAT(user, '@', host) IN(%(drop)s);;
+        DELETE FROM db WHERE CONCAT(user, '@', host) IN(%(drop)s);
+        DELETE FROM columns_priv WHERE CONCAT(user, '@', host) IN(%(drop)s);
         FLUSH PRIVILEGES;
         """ % dict(drop="'" + "','".join(drop_users) + "'")
-    res = __salt__['mysql.query']('mysql', query)
+    res = __salt__['mysql.query']('mysql', query, **connection_args)
     LOG.debug(res)
 
     res = drop_users
@@ -73,7 +73,7 @@ def cleanup_users(extra_keep=[], **connection_args):
 
 debian_keep = ['root@%', 'debian-sys-maint@localhost']
 
-def list_user_managed(add_extra = [], **connection_args):
+def list_user_managed(add_extra = []):
     '''
     "list_user_managed" list all managed users according to pillar data
 
@@ -88,9 +88,7 @@ def list_user_managed(add_extra = [], **connection_args):
     LOG.debug('Executing mysql.list_user_managed')
     managed = []
     for user, info in __salt__['pillar.get']('mysql:user', {}).items():
-        # ingnore disabled user, feature added by customers-formula
-        if info.get('disabled'):
-            continue
+        # single or many host
         hosts = info.get('hosts', [info.get('host')])
         for h in hosts:
             managed.append(user + '@' + h)
@@ -99,7 +97,6 @@ def list_user_managed(add_extra = [], **connection_args):
         managed += add_extra
 
     LOG.debug(managed)
-
     return managed
 
 def list_user_to_keep(add_extra = []):
@@ -146,7 +143,7 @@ def list_user_to_drop(drop_extra = [], keep_extra = [], **connection_args):
     clause = "CONCAT(user, '@', host) NOT regexp '^(%s)$'" % regexp
     query= "SELECT CONCAT(user, '@', host) as user FROM user WHERE %s;" % clause
     LOG.debug(query)
-    res = __salt__['mysql.query']('mysql', query)
+    res = __salt__['mysql.query']('mysql', query, **connection_args)
     LOG.debug(res)
 
     # format as a list, as they are tuple
