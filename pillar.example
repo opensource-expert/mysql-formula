@@ -27,6 +27,12 @@ mysql:
     # another host
     host: 123.123.123.123
     # my.cnf sections changes
+    auto_remove_user_not_managed: True
+    # list of couple user@host, can be user@%
+    # note: % will become a regexp (.*) matching everything
+    keep_user_extra:
+      - momo@foreignhost.name
+      - admin@%
     mysqld:
       # you can use either underscore or hyphen in param names
       bind-address: 0.0.0.0
@@ -110,9 +116,6 @@ mysql:
       hosts:
         - localhost
         - 10.0.0.22
-      # will add/tested for present on the hosts: above and removed from hosts_absent:
-      hosts_absent:
-        - 10.0.0.3
       databases:
         - database: foo
           grants: ['all privileges']

@@ -27,36 +27,6 @@ This state handle creation and deletion of mysql's user.
       {%- endif %}
     - connection_charset: utf8
 {% endmacro -%}
-
-{# this macro is the salt statement to remove a user #}
-{%- macro mysql_user_remove(name, host, where) %}
-{%- set state_id = 'mysql_user_remove_' ~ name ~ '_' ~ host %}
-{{ state_id }}:
-  # {{ where }}
-  mysql_user.absent:
-    - name: {{ name }}
-    - host: '{{ host }}'
-    {{ mysql_root_connection() }}
-{% endmacro -%}
-
-{#- this macro is a salt state fully destroy a user from mysql tables
-it is an experimental macro… use with caution!
--#}
-{% macro mysql_user_destroy(name) %}
-{%- set state_id = 'mysql_user_destroy_' ~ name %}
-{%- set queries = "
-DELETE FROM columns_priv WHERE user = '" ~ name ~ "';
-DELETE FROM db    WHERE user = '" ~  name ~ "';
-DELETE FROM user  WHERE user = '" ~ name ~"';
-FLUSH PRIVILEGES;
-" %}
-{{ state_id }}:
-  module.run:
-    - name: mysql.query
-    - database: mysql
-    - query: "{{ queries }}"
-    {{ mysql_root_connection() }}
-{% endmacro -%}
 {#-
 ===== MAIN OUTPUT=====
 -#}
@@ -91,12 +61,8 @@ include:
   ===== INNER LOOP OVER DATA : host -> fecthed above single or multiple =====
 -#}
 {% for host in user_hosts %}
-{% if user.absent is defined and user.absent %}
-{{ mysql_user_remove(name, host, 'top') }}
-{% else %}
-{#-
-  CREATE USER
--#}
+{%    if user.absent is not defined or not user.absent %}
+{#- ================================================== CREATE USER -#}
 {% set state_id = 'mysql_user_' ~ name ~ '_' ~ host %}
 {{ state_id }}:
   mysql_user.present:
@@ -155,28 +121,22 @@ include:
       - mysql_user: {{ state_id }}
 {% endfor %}
 {% endif %}
-
 {# collect added user for mysql/init.sls for requisites #}
 {% do user_states.append(state_id) %}
-
-{# END user.absent #}
-{% endif %}
-{#-
-  =============== END FOR host
--#}
+{#-   ========== END user is defined and present #}
+{%-  endif %}
+{#- ===================== END FOR host ======================================== -#}
+{% endfor %}
+{#- =============== END FOR user -#}
 {% endfor %}
 
 {#-
-extra remove user with multiples host see #119 for user.hosts_absent (list)
-must be in user loop not in host loop.
+Remove all users not managed, See #119, grants will be dropped for those users too.
+You can check before with: salt 'db*' mysql.list_user_to_drop
 -#}
-{% set user_hosts_absent = salt['pillar.get']('mysql:user:%s:hosts_absent'|format(name)) %}
-{% if user_hosts_absent != '' %}
-  {% for h in user_hosts_absent %}
-    {{ mysql_user_remove(name, h, 'end') }}
-  {% endfor %}
+{% if salt['pillar.get']('mysql:server:auto_remove_user_not_managed') %}
+remove_user_not_managed:
+  module.run:
+    - name: mysql.cleanup_users
+    - keep_exrta: {{ salt['pillar.get']('mysql:server:keep_user_extra', []) }}
 {% endif %}
-{#-
-  =============== END FOR user
--#}
-{% endfor %}

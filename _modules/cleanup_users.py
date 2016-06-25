@@ -94,10 +94,13 @@ def list_user_managed(keep_extra = [], drop_extra = []):
         # single or many host
         hosts = info.get('hosts', [info.get('host')])
         for h in hosts:
-            s = user + '@' + h
-            if re.search(regexp, s):
-                continue
-            managed.append(s)
+            # if the user as no host entry (absent: True), ignore it.
+            # will be deleted.
+            if h:
+                s = user + '@' + h
+                if re.search(regexp, s):
+                    continue
+                managed.append(s)
 
     if len(keep_extra) > 0:
         managed += keep_extra
