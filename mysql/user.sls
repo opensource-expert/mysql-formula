@@ -138,5 +138,5 @@ You can check before with: salt 'db*' mysql.list_user_to_drop
 remove_user_not_managed:
   module.run:
     - name: mysql.cleanup_users
-    - keep_exrta: {{ salt['pillar.get']('mysql:server:keep_user_extra', []) }}
+    - keep_extra: {{ salt['pillar.get']('mysql:server:keep_user_extra', []) }}
 {% endif %}
