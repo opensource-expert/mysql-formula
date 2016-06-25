@@ -118,9 +118,6 @@ mysql:
       hosts:
         - localhost
         - 10.0.0.22
-      # will add/tested for present on the hosts: above and removed from hosts_absent:
-      hosts_absent:
-        - 10.0.0.3
       databases:
         - database: foo
           grants: ['all privileges']
