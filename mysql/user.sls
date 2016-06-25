@@ -131,8 +131,8 @@ include:
 {% endfor %}
 
 {#-
-remove all users not managed, See #119, grants will be droped for those users too
-you can check before with: salt 'db*' mysql.list_user_to_drop
+Remove all users not managed, See #119, grants will be dropped for those users too.
+You can check before with: salt 'db*' mysql.list_user_to_drop
 -#}
 {% if salt['pillar.get']('mysql:server:auto_remove_user_not_managed') %}
 remove_user_not_managed:
