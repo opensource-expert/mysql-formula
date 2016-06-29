@@ -19,4 +19,6 @@ echo PURGE | debconf-communicate mariadb-server
 # check nothing left
 debconf-get-selections | egrep 'maria|mysql'
 
+# remove generated file
+rm -f /root/.my.cnf /etc/salt/minion.d/55-mysql-cnf.conf
 exit 0
